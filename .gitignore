@@ -1,0 +1,11 @@
+__pycache__/
+.idea/
+*.ipr
+*.iws
+*.iml
+.vscode/
+/out/
+/build/
+/target/
+
+config.json
