@@ -1,5 +1,5 @@
 import zlib
-from Crypto.Cipher import Salsa20
+from nacl.secret import SecretBox
 import base64
 import hashlib
 
@@ -22,9 +22,12 @@ deflate_file = zlib.compress        # (data: bytes) -> bytes
 # 执行aes操作的函数
 def aes_encrypt(data: bytes, password: str) -> bytes:
     raw_pass = base64.urlsafe_b64decode(password.encode('latin1'))
-    key, nonce = (raw_pass[8:], raw_pass[:8])
-    cipher = Salsa20.new(key, nonce)
-    return nonce + cipher.encrypt(data)
+    key, nonce = (raw_pass[24:], raw_pass[:24])
+    return _aes_encrypt(data, key, nonce)
+
+
+def _aes_encrypt(data: bytes, key: bytes, nonce: bytes) -> bytes:
+    return SecretBox(key).encrypt(data, nonce)
 
 # 执行base64操作的函数
 base64_encode = base64.b64encode    # (data: bytes) -> bytes

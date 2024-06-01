@@ -82,7 +82,7 @@ default_config = lambda: Config(None, None, None, None, None, None)
 
 def main0(filename: str, file_content: bytes,
          config: Config):
-    password: str = crypt.urlsafe_base64_encode(passphrases.gen_cipher()).decode('ascii')
+    password: str = crypt.urlsafe_base64_encode(passphrases.gen_cipher(24 + 32)).decode('ascii')
     encrypted_content: bytes = crypt.encrypt_file(file_content, password, config.encrypt_algorithms)   # 原始数据大小
 
     size = len(file_content)
