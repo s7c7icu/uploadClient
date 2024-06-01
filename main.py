@@ -5,6 +5,16 @@ import json
 from os import path
 import argparse
 
+try:
+    import qrcode
+    def print_as_qr(link: str):
+        qr = qrcode.QRCode()
+        qr.add_data(link)
+        qr.make()
+        qr.print_ascii()
+except ImportError:
+    print_as_qr = lambda link: None
+
 
 _log = print
 
@@ -21,6 +31,7 @@ class Config:
     encrypt_algorithms: str # 默认值："deflate+aes+base64"
     # password_len: int   # 默认值 16
     meta_slug_len: int  # 默认值 6
+    print_link_as_qrcode: bool  # 默认值 True
 
     def __init__(self,
                  auth_token: str,
@@ -28,7 +39,8 @@ class Config:
                  meta_url: str, data_url: str, download_url: str,
                  committer: str = default_committer(),
                  encrypt_algorithms: str = "deflate+aes+base64",
-                 meta_slug_len: int = 6):
+                 meta_slug_len: int = 6,
+                 print_link_as_qrcode: bool = True):
         self.auth_token = auth_token
         self.meta_repo = meta_repo
         self.data_repo = data_repo
@@ -39,6 +51,8 @@ class Config:
         self.encrypt_algorithms = encrypt_algorithms
         # self.password_len = password_len
         self.meta_slug_len = meta_slug_len
+        self.print_link_as_qrcode = print_link_as_qrcode
+
 
     def to_dict(self) -> dict:
         # 将Config对象转换为字典
@@ -52,7 +66,8 @@ class Config:
             "committer": self.committer,
             "encrypt_algorithms": self.encrypt_algorithms,
             # "password_len": self.password_len,
-            "meta_slug_len": self.meta_slug_len
+            "meta_slug_len": self.meta_slug_len,
+            "print_link_as_qrcode": print_link_as_qrcode,
         }
 
     def from_dict(self, data: dict):
@@ -67,6 +82,7 @@ class Config:
         self.encrypt_algorithms = data.get("encrypt_algorithms", self.encrypt_algorithms)
         # self.password_len = data.get("password_len", self.password_len)
         self.meta_slug_len = data.get("meta_slug_len", self.meta_slug_len)
+        self.print_link_as_qrcode = data.get("print_link_as_qrcode", self.print_link_as_qrcode)
 
     def is_uninitialized(self):
         return not (
@@ -124,8 +140,11 @@ def main0(filename: str, file_content: bytes,
         break
     response = meta_repo_access.create_file(uri, meta_dump.encode('utf8'))
     if not response:
+        link = f'{config.download_url}/{meta_slug}#{password}'
         _log(f'Successfully created {config.meta_url}/{uri}. The file will be available in a few minutes.')
-        _log(f'Visit this address to download: {config.download_url}/{meta_slug}#{password}')
+        _log(f'Visit this address to download: {link}')
+        if config.print_link_as_qrcode:
+            print_as_qr(link)
         _log(f'Save the link before closing the window, or you\'ll never be able to see it again!')
         _log(f'Additionally, do not leak the link to strangers!')
     else:
