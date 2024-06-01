@@ -124,8 +124,9 @@ def main0(filename: str, file_content: bytes,
         break
     response = meta_repo_access.create_file(uri, meta_dump.encode('utf8'))
     if not response:
-        _log(f'Successfully created {config.meta_url}/{uri}')
+        _log(f'Successfully created {config.meta_url}/{uri}. The file will be available in a few minutes.')
         _log(f'Visit this address to download: {config.download_url}/{meta_slug}#{password}')
+        _log(f'Do not leak the link to strangers!')
     else:
         _log('Error while uploading meta:', json.dumps(response))
 
