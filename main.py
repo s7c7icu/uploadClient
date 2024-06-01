@@ -126,7 +126,8 @@ def main0(filename: str, file_content: bytes,
     if not response:
         _log(f'Successfully created {config.meta_url}/{uri}. The file will be available in a few minutes.')
         _log(f'Visit this address to download: {config.download_url}/{meta_slug}#{password}')
-        _log(f'Do not leak the link to strangers!')
+        _log(f'Save the link before closing the window, or you\'ll never be able to see it again!')
+        _log(f'Additionally, do not leak the link to strangers!')
     else:
         _log('Error while uploading meta:', json.dumps(response))
 
@@ -156,4 +157,4 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--filename', type=str, help="文件名重写，默认为与路径最后一个 '/' 后的子串一致。")
     args = parser.parse_args()
 
-    main(args.path_to_file, args.config or './config.json', args.filename or args.path_to_file.replace('\\', '/')[args.path_to_file.rfind('/') + 1:])
+    main(args.path_to_file, args.config or './config.json', args.filename or args.path_to_file[args.path_to_file.replace('\\', '/').rfind('/') + 1:])
