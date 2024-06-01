@@ -1,6 +1,5 @@
 import zlib
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
+from Crypto.Cipher import Salsa20
 import base64
 import hashlib
 
@@ -23,8 +22,9 @@ deflate_file = zlib.compress        # (data: bytes) -> bytes
 # 执行aes操作的函数
 def aes_encrypt(data: bytes, password: str) -> bytes:
     raw_pass = base64.urlsafe_b64decode(password.encode('latin1'))
-    encryptor = Cipher(algorithms.Salsa20(raw_pass[8:], raw_pass[:8]), mode=None, backend=default_backend()).encryptor()
-    return encryptor.update(data)
+    key, nonce = (raw_pass[8:], raw_pass[:8])
+    cipher = Salsa20.new(key, nonce)
+    return nonce + cipher.encrypt(data)
 
 # 执行base64操作的函数
 base64_encode = base64.b64encode    # (data: bytes) -> bytes
