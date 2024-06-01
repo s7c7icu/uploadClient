@@ -1,5 +1,6 @@
 import zlib
-from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 import base64
 import hashlib
 
@@ -21,13 +22,13 @@ deflate_file = zlib.compress        # (data: bytes) -> bytes
 
 # 执行aes操作的函数
 def aes_encrypt(data: bytes, password: str) -> bytes:
-    key = Fernet.generate_key()
-    fernet = Fernet(key)
-    encrypted_data = fernet.encrypt(data)
-    return encrypted_data
+    raw_pass = base64.urlsafe_b64decode(password.encode('latin1'))
+    encryptor = Cipher(algorithms.Salsa20(raw_pass[8:], raw_pass[:8]), mode=None, backend=default_backend()).encryptor()
+    return encryptor.update(data)
 
 # 执行base64操作的函数
 base64_encode = base64.b64encode    # (data: bytes) -> bytes
+urlsafe_base64_encode = base64.urlsafe_b64encode
 
 def base64_encode_str(data: str, encoding: str = 'utf8') -> str:
     return base64_encode(data.encode(encoding)).decode('ascii')
