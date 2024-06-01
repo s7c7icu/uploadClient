@@ -156,4 +156,4 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--filename', type=str, help="文件名重写，默认为与路径最后一个 '/' 后的子串一致。")
     args = parser.parse_args()
 
-    main(args.path_to_file, args.config or './config.json', args.filename or args.path_to_file[args.path_to_file.rfind('/') + 1:])
+    main(args.path_to_file, args.config or './config.json', args.filename or args.path_to_file.replace('\\', '/')[args.path_to_file.rfind('/') + 1:])
