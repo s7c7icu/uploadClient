@@ -1,5 +1,5 @@
 import zlib
-from cryptography.fernet import Fernet
+from nacl.secret import SecretBox
 import base64
 import hashlib
 
@@ -21,13 +21,17 @@ deflate_file = zlib.compress        # (data: bytes) -> bytes
 
 # 执行aes操作的函数
 def aes_encrypt(data: bytes, password: str) -> bytes:
-    key = Fernet.generate_key()
-    fernet = Fernet(key)
-    encrypted_data = fernet.encrypt(data)
-    return encrypted_data
+    raw_pass = base64.urlsafe_b64decode(password.encode('latin1'))
+    key, nonce = (raw_pass[24:], raw_pass[:24])
+    return _aes_encrypt(data, key, nonce)
+
+
+def _aes_encrypt(data: bytes, key: bytes, nonce: bytes) -> bytes:
+    return SecretBox(key).encrypt(data, nonce)
 
 # 执行base64操作的函数
 base64_encode = base64.b64encode    # (data: bytes) -> bytes
+urlsafe_base64_encode = base64.urlsafe_b64encode
 
 def base64_encode_str(data: str, encoding: str = 'utf8') -> str:
     return base64_encode(data.encode(encoding)).decode('ascii')

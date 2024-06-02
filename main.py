@@ -19,7 +19,7 @@ class Config:
 
     committer: str  # 默认值：default_committer()
     encrypt_algorithms: str # 默认值："deflate+aes+base64"
-    password_len: int   # 默认值 16
+    # password_len: int   # 默认值 16
     meta_slug_len: int  # 默认值 6
 
     def __init__(self,
@@ -28,7 +28,7 @@ class Config:
                  meta_url: str, data_url: str, download_url: str,
                  committer: str = default_committer(),
                  encrypt_algorithms: str = "deflate+aes+base64",
-                 password_len: int = 16, meta_slug_len: int = 6):
+                 meta_slug_len: int = 6):
         self.auth_token = auth_token
         self.meta_repo = meta_repo
         self.data_repo = data_repo
@@ -37,7 +37,7 @@ class Config:
         self.download_url = download_url
         self.committer = committer
         self.encrypt_algorithms = encrypt_algorithms
-        self.password_len = password_len
+        # self.password_len = password_len
         self.meta_slug_len = meta_slug_len
 
     def to_dict(self) -> dict:
@@ -51,7 +51,7 @@ class Config:
             "download_url": self.download_url,
             "committer": self.committer,
             "encrypt_algorithms": self.encrypt_algorithms,
-            "password_len": self.password_len,
+            # "password_len": self.password_len,
             "meta_slug_len": self.meta_slug_len
         }
 
@@ -65,7 +65,7 @@ class Config:
         self.download_url = data.get("download_url", self.download_url)
         self.committer = data.get("committer", self.committer)
         self.encrypt_algorithms = data.get("encrypt_algorithms", self.encrypt_algorithms)
-        self.password_len = data.get("password_len", self.password_len)
+        # self.password_len = data.get("password_len", self.password_len)
         self.meta_slug_len = data.get("meta_slug_len", self.meta_slug_len)
 
     def is_uninitialized(self):
@@ -82,7 +82,7 @@ default_config = lambda: Config(None, None, None, None, None, None)
 
 def main0(filename: str, file_content: bytes,
          config: Config):
-    password: str = passphrases.gen_password(config.password_len)
+    password: str = crypt.urlsafe_base64_encode(passphrases.gen_cipher(24 + 32)).decode('ascii')
     encrypted_content: bytes = crypt.encrypt_file(file_content, password, config.encrypt_algorithms)   # 原始数据大小
 
     size = len(file_content)
@@ -130,8 +130,10 @@ def main0(filename: str, file_content: bytes,
         break
     response = meta_repo_access.create_file(uri, meta_dump.encode('utf8'))
     if not response:
-        _log(f'Successfully created {config.meta_url}/{uri}')
+        _log(f'Successfully created {config.meta_url}/{uri}. The file will be available in a few minutes.')
         _log(f'Visit this address to download: {config.download_url}/{meta_slug}#{password}')
+        _log(f'Save the link before closing the window, or you\'ll never be able to see it again!')
+        _log(f'Additionally, do not leak the link to strangers!')
     else:
         _log('Error while uploading meta:', json.dumps(response))
 
@@ -161,4 +163,4 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--filename', type=str, help="文件名重写，默认为与路径最后一个 '/' 后的子串一致。")
     args = parser.parse_args()
 
-    main(args.path_to_file, args.config or './config.json', args.filename or args.path_to_file[args.path_to_file.rfind('/') + 1:])
+    main(args.path_to_file, args.config or './config.json', args.filename or args.path_to_file[args.path_to_file.replace('\\', '/').rfind('/') + 1:])
