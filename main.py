@@ -109,7 +109,13 @@ def main0(filename: str, file_content: bytes,
             _log(f'File {uri} in repo {config.data_repo} exists')
         else:
             _log(f'Putting {uri} onto repo {config.data_repo}')
-            data_repo_access.create_file(uri, encrypted_content)
+            response = data_repo_access.create_file(uri, encrypted_content)
+            if not response:
+                _log('... data uploaded')
+            else:
+                _log('Error while uploading data:', json.dumps(response))
+                return
+            
         meta['data'] = {'fetch': f'{config.data_url}/{uri}'}
 
     # Gen meta and its slug
