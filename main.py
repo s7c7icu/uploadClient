@@ -3,6 +3,7 @@ from ghrepoaccess import GHRepoAccess, default_committer
 import passphrases
 import json
 from os import path
+import typing
 import argparse
 
 
@@ -81,7 +82,7 @@ default_config = lambda: Config(None, None, None, None, None, None)
 
 
 def main0(filename: str, file_content: bytes,
-         config: Config):
+         config: Config, url_callback: typing.Callable[[str], None] | None = None):
     password: str = crypt.urlsafe_base64_encode(passphrases.gen_cipher(24 + 32)).decode('ascii')
     encrypted_content: bytes = crypt.encrypt_file(file_content, password, config.encrypt_algorithms)   # 原始数据大小
 
@@ -130,15 +131,27 @@ def main0(filename: str, file_content: bytes,
         break
     response = meta_repo_access.create_file(uri, meta_dump.encode('utf8'))
     if not response:
+        uri = f'{config.download_url}/{meta_slug}#{password}'
+        if url_callback:
+            url_callback(uri)
         _log(f'Successfully created {config.meta_url}/{uri}. The file will be available in a few minutes.')
-        _log(f'Visit this address to download: {config.download_url}/{meta_slug}#{password}')
+        _log(f'Visit this address to download: {uri}')
         _log(f'Save the link before closing the window, or you\'ll never be able to see it again!')
         _log(f'Additionally, do not leak the link to strangers!')
+        return None
     else:
         _log('Error while uploading meta:', json.dumps(response))
+        return 2
 
 
-def main(path_to_file: str, path_to_config: str, filename: str):
+def file_lister(dump_file: str) -> typing.Callable[[str, str], None]:
+    def _internal_file_lister(filename: str, url: str):
+        with open(dump_file, 'a') as f:
+            f.write(f'{filename}\t{url}\n')
+    return _internal_file_lister
+
+
+def main(path_to_file: str, path_to_config: str, filename: str, file_callback: typing.Callable[[str, str], None] | None = None):
     config = default_config()
     try:
         with open(path_to_config) as f:
@@ -150,10 +163,11 @@ def main(path_to_file: str, path_to_config: str, filename: str):
         with open(path_to_config, 'w') as f:
             json.dump(config.to_dict(), f, indent=4)
         _log('Please complete the config')
-        return
+        return 1
     with open(path_to_file, 'rb') as f:
         content = f.read()
-    main0(filename, content, config)
+    url_callback = (lambda url: file_callback(path_to_file, url)) if file_callback else None
+    return main0(filename, content, config, url_callback)
 
 
 if __name__ == '__main__':
@@ -161,6 +175,14 @@ if __name__ == '__main__':
     parser.add_argument('path_to_file', type=str, help="路径必须提供。")
     parser.add_argument('-c', '--config', type=str, help="配置文件路径，默认为 './config'")
     parser.add_argument('-n', '--filename', type=str, help="文件名重写，默认为与路径最后一个 '/' 后的子串一致。")
+    parser.add_argument('-p', '--dumplist', type=str, help="将文件路径和URL追加到此文件，可留空")
     args = parser.parse_args()
 
-    main(args.path_to_file, args.config or './config.json', args.filename or args.path_to_file[args.path_to_file.replace('\\', '/').rfind('/') + 1:])
+    file_callback = file_lister(args.dumplist) if args.dumplist else None
+
+    exit(main(
+        args.path_to_file,
+        args.config or './config.json',
+        args.filename or args.path_to_file[args.path_to_file.replace('\\', '/').rfind('/') + 1:],
+        file_callback
+    ) or 0)
