@@ -147,13 +147,13 @@ def main0(filename: str, file_content: bytes,
         break
     response = meta_repo_access.create_file(uri, meta_dump.encode('utf8'))
     if not response:
-        uri = f'{config.download_url}/{meta_slug}#{password}'
+        link = f'{config.download_url}/{meta_slug}#{password}'
         if url_callback:
-            url_callback(uri)
+            url_callback(link)
         _log(f'Successfully created {config.meta_url}/{uri}. The file will be available in a few minutes.')
-        _log(f'Visit this address to download: {uri}')
+        _log(f'Visit this address to download: {link}')
         if config.print_link_as_qrcode:
-            print_as_qr(uri)
+            print_as_qr(link)
         _log(f'Save the link before closing the window, or you\'ll never be able to see it again!')
         _log(f'Additionally, do not leak the link to strangers!')
         return None
