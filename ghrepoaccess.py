@@ -14,10 +14,9 @@ class GHRepoAccess:
     committer: dict
     repo: str
 
-    def __init__(self, auth_token: str, committer: dict, repo: str):
+    def __init__(self, auth_token: str, _committer: dict, repo: str):
         self.auth_token = auth_token
-        self.committer = committer
-        #self.owner = owner
+        self.committer = _committer
         self.repo = repo
 
     def check_existence(self, path: str) -> bool:
@@ -45,6 +44,8 @@ class GHRepoAccess:
             "message": f"Create file {path}",
             "content": encoded_content
         }
+        if self.committer:
+            payload['committer'] = self.committer
 
         # 发送请求
         response = requests.put(url, json=payload, headers=headers)
@@ -55,4 +56,3 @@ class GHRepoAccess:
         else:
             # 文件创建失败，返回错误信息
             return response.json()
-

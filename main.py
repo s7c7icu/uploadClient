@@ -8,6 +8,8 @@ import argparse
 
 try:
     import qrcode
+
+
     def print_as_qr(link: str):
         qr = qrcode.QRCode()
         qr.add_data(link)
@@ -15,7 +17,6 @@ try:
         qr.print_ascii()
 except ImportError:
     print_as_qr = lambda link: None
-
 
 _log = print
 
@@ -28,8 +29,8 @@ class Config:
     data_url: str
     download_url: str
 
-    committer: str  # 默认值：default_committer()
-    encrypt_algorithms: str # 默认值："deflate+aes+base64"
+    committer: dict  # 默认值：default_committer()
+    encrypt_algorithms: str  # 默认值："deflate+aes+base64"
     # password_len: int   # 默认值 16
     meta_slug_len: int  # 默认值 6
     print_link_as_qrcode: bool  # 默认值 True
@@ -38,7 +39,7 @@ class Config:
                  auth_token: str,
                  meta_repo: str, data_repo: str,
                  meta_url: str, data_url: str, download_url: str,
-                 committer: str = default_committer(),
+                 committer: dict = default_committer(),
                  encrypt_algorithms: str = "deflate+aes+base64",
                  meta_slug_len: int = 6,
                  print_link_as_qrcode: bool = True):
@@ -54,7 +55,6 @@ class Config:
         self.meta_slug_len = meta_slug_len
         self.print_link_as_qrcode = print_link_as_qrcode
 
-
     def to_dict(self) -> dict:
         # 将Config对象转换为字典
         return {
@@ -68,7 +68,7 @@ class Config:
             "encrypt_algorithms": self.encrypt_algorithms,
             # "password_len": self.password_len,
             "meta_slug_len": self.meta_slug_len,
-            "print_link_as_qrcode": print_link_as_qrcode,
+            "print_link_as_qrcode": self.print_link_as_qrcode,
         }
 
     def from_dict(self, data: dict):
@@ -87,20 +87,18 @@ class Config:
 
     def is_uninitialized(self):
         return not (
-            self.auth_token and self.meta_repo and self.data_repo and
-            self.meta_url and self.data_url and self.download_url
+                self.auth_token and self.meta_repo and self.data_repo and
+                self.meta_url and self.data_url and self.download_url
         )
-
 
 
 default_config = lambda: Config(None, None, None, None, None, None)
 
 
-
 def main0(filename: str, file_content: bytes,
-         config: Config, url_callback: typing.Callable[[str], None] | None = None):
+          config: Config, url_callback: typing.Callable[[str], None] | None = None):
     password: str = crypt.urlsafe_base64_encode(passphrases.gen_cipher(24 + 32)).decode('ascii')
-    encrypted_content: bytes = crypt.encrypt_file(file_content, password, config.encrypt_algorithms)   # 原始数据大小
+    encrypted_content: bytes = crypt.encrypt_file(file_content, password, config.encrypt_algorithms)  # 原始数据大小
 
     size = len(file_content)
     meta = {
@@ -108,7 +106,7 @@ def main0(filename: str, file_content: bytes,
         'alg': config.encrypt_algorithms,
         'size': size,
         'filename': crypt.base64_encode_str(filename),
-        'hash': {                   # 原始数据哈希
+        'hash': {  # 原始数据哈希
             'sha256': crypt.sha256_hash(file_content),
             'sha512': crypt.sha512_hash(file_content)
         }
@@ -116,7 +114,8 @@ def main0(filename: str, file_content: bytes,
     _log('Generated meta')
 
     if size <= 4096:
-        meta['data'] = {'raw': encrypted_content.decode('ascii')} if encrypted_content.isascii() else {'base64': crypt.base64_encode(encrypted_content).decode('ascii')}
+        meta['data'] = {'raw': encrypted_content.decode('ascii')} if encrypted_content.isascii() else {
+            'base64': crypt.base64_encode(encrypted_content).decode('ascii')}
     else:
         data_slug = crypt.sha512_hash(encrypted_content)
         uri = data_slug[:2] + "/" + data_slug[2:10] + "/" + data_slug[10:] + ".bin"
@@ -132,7 +131,7 @@ def main0(filename: str, file_content: bytes,
             else:
                 _log('Error while uploading data:', json.dumps(response))
                 return
-            
+
         meta['data'] = {'fetch': f'{config.data_url}/{uri}'}
 
     # Gen meta and its slug
@@ -166,10 +165,12 @@ def file_lister(dump_file: str) -> typing.Callable[[str, str], None]:
     def _internal_file_lister(filename: str, url: str):
         with open(dump_file, 'a') as f:
             f.write(f'{filename}\t{url}\n')
+
     return _internal_file_lister
 
 
-def main(path_to_file: str, path_to_config: str, filename: str, file_callback: typing.Callable[[str, str], None] | None = None):
+def main(path_to_file: str, path_to_config: str, filename: str,
+         _file_callback: typing.Callable[[str, str], None] | None = None):
     config = default_config()
     try:
         with open(path_to_config) as f:
@@ -184,7 +185,7 @@ def main(path_to_file: str, path_to_config: str, filename: str, file_callback: t
         return 1
     with open(path_to_file, 'rb') as f:
         content = f.read()
-    url_callback = (lambda url: file_callback(path_to_file, url)) if file_callback else None
+    url_callback = (lambda url: _file_callback(path_to_file, url)) if _file_callback else None
     return main0(filename, content, config, url_callback)
 
 
