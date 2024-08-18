@@ -1,10 +1,10 @@
-import crypt
-from ghrepoaccess import GHRepoAccess, default_committer
-import passphrases
-import json
-from os import path
-import typing
 import argparse
+import json
+import typing
+
+import crypt
+import passphrases
+from ghrepoaccess import GHRepoAccess, default_committer
 
 try:
     import qrcode
