@@ -26,7 +26,7 @@ deflate_file = zlib.compress  # (data: bytes) -> bytes
 def aes_encrypt(data: bytes, password: str) -> bytes:
     raw_pass = base64.urlsafe_b64decode(password.encode('latin1'))
     key, nonce = (raw_pass[24:], raw_pass[:24])
-    return _aes_encrypt(data, key, nonce)
+    return _aes_encrypt(data, key, nonce)[24:]  # Schema 2: 去除前导nonce部分
 
 
 def _aes_encrypt(data: bytes, key: bytes, nonce: bytes) -> bytes:
@@ -41,9 +41,6 @@ urlsafe_base64_encode = base64.urlsafe_b64encode
 def base64_encode_str(data: str, encoding: str = 'utf8') -> str:
     return base64_encode(data.encode(encoding)).decode('ascii')
 
-
-# 注意：以上函数去掉了async关键字，因为zlib.compress, Fernet.encrypt, 和base64.b64encode
-# 都是同步操作。
 
 # 文件加密函数
 def encrypt_file(file_content: bytes, password: str, operations: str = "deflate+aes+base64") -> bytes:

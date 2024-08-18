@@ -95,6 +95,9 @@ class Config:
 default_config = lambda: Config(None, None, None, None, None, None)
 
 
+SCHEMA_VERSION = 2
+
+
 def main0(filename: str, file_content: bytes,
           config: Config, url_callback: typing.Callable[[str], None] | None = None):
     password: str = crypt.urlsafe_base64_encode(passphrases.gen_cipher(24 + 32)).decode('ascii')
@@ -102,7 +105,7 @@ def main0(filename: str, file_content: bytes,
 
     size = len(file_content)
     meta = {
-        'schema': 1,
+        'schema': SCHEMA_VERSION,
         'alg': config.encrypt_algorithms,
         'size': size,
         'filename': crypt.base64_encode_str(filename),
